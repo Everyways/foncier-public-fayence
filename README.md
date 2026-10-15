@@ -2,7 +2,7 @@
 
 Carte interactive des parcelles non bâties détenues par des propriétaires publics (État, Département, communes, établissements publics, offices HLM) dans les 9 communes du Pays de Fayence (Var) : Bagnols-en-Forêt, Callian, Fayence, Mons, Montauroux, Saint-Paul-en-Forêt, Seillans, Tanneron, Tourrettes.
 
-- Filtres par type de propriétaire, commune, surface minimale et nom de propriétaire
+- Filtres par type de propriétaire, type de terrain (7 familles de natures cadastrales), commune, surface minimale et nom de propriétaire
 - Mise en évidence des parcelles de 9 ha et plus et/ou situées à plus de N km (0,5 à 10 km) de toute habitation, critères cumulables
 - Fond routier simplifié (BD TOPO IGN)
 - Pour chaque parcelle : liens vers la vue satellite Géoportail et Google Maps

@@ -42,6 +42,7 @@ h1{font-size:22px;font-weight:600;margin:0;text-wrap:balance;line-height:1.15}
 .sub-range{padding:0 4px 4px 26px}
 .sub-range input:disabled{opacity:.4}
 .hlsum{display:grid;grid-template-columns:14px 1fr auto;align-items:center;gap:8px;padding:6px 4px;font-size:13px;color:var(--muted)}
+.own.terr{grid-template-columns:auto 1fr auto}
 .n{font-family:var(--mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
 select,input[type=search]{width:100%;font:inherit;font-size:14px;padding:7px 9px;border:1px solid var(--line);border-radius:4px;background:var(--bg);color:var(--fg)}
 .range{display:flex;align-items:center;gap:10px}
@@ -90,6 +91,10 @@ select,input[type=search]{width:100%;font:inherit;font-size:14px;padding:7px 9px
       <div class="owners" id="owners"></div>
     </div>
     <div>
+      <p class="lbl">Type de terrain</p>
+      <div class="owners" id="terrains"></div>
+    </div>
+    <div>
       <label class="lbl" for="commune">Commune</label>
       <select id="commune"><option value="">Les 9 communes</option></select>
     </div>
@@ -118,7 +123,7 @@ select,input[type=search]{width:100%;font:inherit;font-size:14px;padding:7px 9px
       <input type="search" id="q" placeholder="ex. COMMUNE DE SEILLANS, ONF…">
     </div>
     <div class="stat" id="stat"></div>
-    <p class="note">Les petites routes et chemins apparaissent en zoomant. La distance aux habitations est mesurée depuis le bord de la parcelle jusqu'au bâtiment résidentiel le plus proche (BD TOPO), y compris hors du territoire. Cliquez une parcelle pour son détail et un lien vers la vue satellite Géoportail. 303 parcelles du fichier 2025 n'ont pas de tracé dans le cadastre de septembre 2026 (divisées ou renumérotées depuis) et n'apparaissent pas. Public ne veut pas dire accessible : forêts domaniales, camps militaires et réserves ont leurs propres règles.<br><br>Sources : <a href="https://www.data.gouv.fr/datasets/fichiers-des-locaux-et-des-parcelles-des-personnes-morales" target="_blank" rel="noopener">DGFiP</a>, <a href="https://cadastre.data.gouv.fr" target="_blank" rel="noopener">cadastre Etalab</a>, <a href="https://geoservices.ign.fr/bdtopo" target="_blank" rel="noopener">BD TOPO IGN</a>.</p>
+    <p class="note">Les petites routes et chemins apparaissent en zoomant. La distance aux habitations est mesurée depuis le bord de la parcelle jusqu'au bâtiment résidentiel le plus proche (BD TOPO), y compris hors du territoire. Une parcelle peut relever de plusieurs types de terrain ; elle s'affiche si l'un d'eux est coché. Cliquez une parcelle pour son détail et un lien vers la vue satellite Géoportail. 303 parcelles du fichier 2025 n'ont pas de tracé dans le cadastre de septembre 2026 (divisées ou renumérotées depuis) et n'apparaissent pas. Public ne veut pas dire accessible : forêts domaniales, camps militaires et réserves ont leurs propres règles.<br><br>Sources : <a href="https://www.data.gouv.fr/datasets/fichiers-des-locaux-et-des-parcelles-des-personnes-morales" target="_blank" rel="noopener">DGFiP</a>, <a href="https://cadastre.data.gouv.fr" target="_blank" rel="noopener">cadastre Etalab</a>, <a href="https://geoservices.ign.fr/bdtopo" target="_blank" rel="noopener">BD TOPO IGN</a>.</p>
   </aside>
   <div class="mapwrap"><div id="map"></div><div id="loading">Chargement des parcelles…</div></div>
 </div>
@@ -134,6 +139,17 @@ const fmtA=m=>m>=10000?(m/10000).toLocaleString("fr-FR",{maximumFractionDigits:2
 const map=L.map("map",{preferCanvas:true,zoomSnap:.5,attributionControl:true}).setView([43.6,6.72],11);
 map.attributionControl.setPrefix(false).addAttribution("DGFiP 2025 · Cadastre Etalab · BD TOPO IGN");
 const on=new Set(TYPES.map(t=>t[0]));
+const FAM=[["Bois et forêts",["Taillis simples","Taillis sous Futaies","Futaies résineuses","Bois"]],
+  ["Landes et maquis",["Landes","Landes Boisées"]],
+  ["Terres et prés",["Terre","Prés","Pâtures ou Pâturages"]],
+  ["Vergers et vignes",["Vergers","Vignes"]],
+  ["Jardins et agrément",["Jardins","Terrains d’agrément"]],
+  ["Sols et terrains à bâtir",["Sols","Terrains à bâtir"]],
+  ["Eaux et voies",["Eaux","Chemins de fer","Canaux de Navigation"]],
+  ["Non renseigné",[]]];
+const famOf={};FAM.forEach(([f,ks])=>ks.forEach(k=>famOf[k]=f));
+const fams=p=>{if(!p._f){const s=new Set((p.k?p.k.split(", "):[]).map(k=>famOf[k]||"Non renseigné"));if(!s.size)s.add("Non renseigné");p._f=[...s]}return p._f};
+const onT=new Set(FAM.map(f=>f[0]));
 const st={commune:"",min:0,q:"",hl:true,far:false,farKm:1,only:false,roads:true};
 const BIG=90000;
 let data=null,layer=null,bigLayer=null,comLayer=null,roadMain=null,roadMinor=null,roadLabels=null;
@@ -150,6 +166,13 @@ const active=()=>st.hl||st.far;
 const hit=p=>active()&&(!st.hl||p.a>=BIG)&&(!st.far||p.h>=st.farKm*1000);
 document.getElementById("roads").addEventListener("change",e=>{st.roads=e.target.checked;showRoads()});
 
+const tw=document.getElementById("terrains");
+FAM.forEach(([f],i)=>{
+  const id="terr-"+i,lab=document.createElement("label");lab.className="own terr";lab.htmlFor=id;
+  lab.innerHTML=`<input type="checkbox" id="${id}" checked><span>${f}</span><span class="n" data-f="${f}">–</span>`;
+  lab.querySelector("input").addEventListener("change",e=>{e.target.checked?onT.add(f):onT.delete(f);draw()});
+  tw.appendChild(lab);
+});
 const ow=document.getElementById("owners");
 TYPES.forEach(([t,v])=>{
   const id="own-"+t.normalize("NFD").replace(/[^a-z]/gi,"");
@@ -163,7 +186,8 @@ minEl.addEventListener("input",()=>{st.min=+minEl.value;minOut.textContent=st.mi
 document.getElementById("commune").addEventListener("change",e=>{st.commune=e.target.value;draw(true)});
 let qt;document.getElementById("q").addEventListener("input",e=>{clearTimeout(qt);qt=setTimeout(()=>{st.q=e.target.value.trim().toUpperCase();draw()},200)});
 
-function pass(p){return on.has(p.g)&&(!st.commune||p.c===st.commune)&&p.a>=st.min&&(!st.q||p.d.includes(st.q))&&(!st.only||!active()||hit(p))}
+function passBase(p){return (!st.commune||p.c===st.commune)&&p.a>=st.min&&(!st.q||p.d.includes(st.q))&&(!st.only||!active()||hit(p))}
+function pass(p){return fams(p).some(f=>onT.has(f))&&on.has(p.g)&&(!st.commune||p.c===st.commune)&&p.a>=st.min&&(!st.q||p.d.includes(st.q))&&(!st.only||!active()||hit(p))}
 function style(f){const c=colors[f.properties.g],big=hit(f.properties);
   if(big)return{color:css("--big"),weight:2.5,fillColor:c,fillOpacity:.8,opacity:1};
   return{color:c,weight:1,fillColor:c,fillOpacity:active()?.3:.45,opacity:active()?.7:.9}}
@@ -190,6 +214,8 @@ function draw(fit){
   layer=L.geoJSON(data,{filter:f=>{const p=f.properties,ok=pass(p);if(ok){counts[p.g]=(counts[p.g]||0)+1;n++;tot+=p.a;if(hit(p))nb++}return ok&&!hit(p)},
     style,onEachFeature:(f,l)=>l.bindPopup(()=>popup(f,l),{maxWidth:300})}).addTo(map);
   document.querySelectorAll(".n[data-t]").forEach(e=>e.textContent=fmt(counts[e.dataset.t]||0));
+  const fc={};data.features.forEach(f=>{const p=f.properties;if(on.has(p.g)&&passBase(p))fams(p).forEach(x=>fc[x]=(fc[x]||0)+1)});
+  document.querySelectorAll(".n[data-f]").forEach(e=>e.textContent=fmt(fc[e.dataset.f]||0));
   bigLayer=L.geoJSON(data,{filter:f=>hit(f.properties)&&pass(f.properties),style,onEachFeature:(f,l)=>l.bindPopup(()=>popup(f,l),{maxWidth:300})}).addTo(map);
   document.getElementById("nbig").textContent=active()?fmt(nb):"–";
   const crit=[st.hl&&"≥ 9 ha",st.far&&"à "+farOut.textContent.replace("≥ ","")+" ou plus d'une habitation"].filter(Boolean);
