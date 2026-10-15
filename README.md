@@ -3,7 +3,7 @@
 Carte interactive des parcelles non bâties détenues par des propriétaires publics (État, Département, communes, établissements publics, offices HLM) dans les 9 communes du Pays de Fayence (Var) : Bagnols-en-Forêt, Callian, Fayence, Mons, Montauroux, Saint-Paul-en-Forêt, Seillans, Tanneron, Tourrettes.
 
 - Filtres par type de propriétaire, commune, surface minimale et nom de propriétaire
-- Mise en évidence des parcelles de 9 ha et plus
+- Mise en évidence des parcelles de 9 ha et plus et/ou situées à plus de N km (0,5 à 10 km) de toute habitation, critères cumulables
 - Fond routier simplifié (BD TOPO IGN)
 - Pour chaque parcelle : liens vers la vue satellite Géoportail et Google Maps
 
@@ -22,13 +22,15 @@ python3 -m http.server 8000
 | Fichier | Contenu | Source |
 |---|---|---|
 | `data/parcelles_publiques_2025.csv` | Parcelles des propriétaires publics, format DGFiP | [Fichiers des parcelles des personnes morales](https://www.data.gouv.fr/datasets/fichiers-des-locaux-et-des-parcelles-des-personnes-morales), situation au 1er janvier 2025 |
-| `data/parcelles.geojson` | Tracés des parcelles ci-dessus | [Cadastre Etalab](https://cadastre.data.gouv.fr), millésime septembre 2026 |
+| `data/parcelles.geojson` | Tracés des parcelles ci-dessus, avec la distance à l'habitation la plus proche (propriété `h`, en mètres) | [Cadastre Etalab](https://cadastre.data.gouv.fr), millésime septembre 2026 ; bâtiments résidentiels [BD TOPO IGN](https://geoservices.ign.fr/bdtopo) |
 | `data/communes.geojson` | Limites des 9 communes | Cadastre Etalab |
 | `data/routes.geojson` | Réseau routier simplifié | [BD TOPO IGN](https://geoservices.ign.fr/bdtopo) via la Géoplateforme |
 
 Toutes les sources sont sous Licence Ouverte Etalab 2.0.
 
 Environ 300 parcelles du fichier DGFiP 2025 n'ont pas de tracé dans le cadastre plus récent (parcelles divisées ou renumérotées) et n'apparaissent pas sur la carte. La surface affichée est la contenance cadastrale de chaque parcelle, sans regroupement des parcelles voisines.
+
+La distance aux habitations est mesurée depuis le bord de la parcelle jusqu'au centre du bâtiment le plus proche dont l'usage principal ou secondaire est « Résidentiel » dans la BD TOPO (granges, hangars et bâtiments agricoles exclus). Les bâtiments situés jusqu'à 10 km hors du territoire sont pris en compte. Elle vaut 0 si une habitation se trouve dans la parcelle et est plafonnée à 15 km.
 
 ## Régénérer les données
 

@@ -44,4 +44,9 @@ python3 -I "$ROOT/scripts/communes.py" "$WORK/geo" "$ROOT/data/communes.geojson"
 python3 -I "$ROOT/scripts/roads.py" "$WORK/routes_raw.geojson"
 python3 -I "$ROOT/scripts/simplify.py" "$WORK/routes_raw.geojson" "$ROOT/data/routes.geojson"
 
+# 5. Distance de chaque parcelle à l'habitation la plus proche (bâtiments résidentiels BD TOPO,
+#    zone élargie de 10 km autour du territoire)
+python3 -I "$ROOT/scripts/habitations.py" "$WORK/habitations.json" "43.41,6.39,43.85,7.04"
+python3 -I "$ROOT/scripts/distance.py" "$ROOT/data/parcelles.geojson" "$WORK/habitations.json"
+
 echo "Données régénérées dans $ROOT/data"

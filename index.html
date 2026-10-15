@@ -39,6 +39,9 @@ h1{font-size:22px;font-weight:600;margin:0;text-wrap:balance;line-height:1.15}
 .sw.road{border:none;height:5px;background:var(--road-main);box-shadow:0 0 0 1px var(--road-mainedge)}
 .rlabel{background:var(--road-main);border:1px solid var(--road-mainedge);border-radius:3px;box-shadow:none;padding:0 4px;font-family:var(--mono);font-size:10px;font-weight:500;color:#1d2621}
 .rlabel::before{display:none}
+.sub-range{padding:0 4px 4px 26px}
+.sub-range input:disabled{opacity:.4}
+.hlsum{display:grid;grid-template-columns:14px 1fr auto;align-items:center;gap:8px;padding:6px 4px;font-size:13px;color:var(--muted)}
 .n{font-family:var(--mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
 select,input[type=search]{width:100%;font:inherit;font-size:14px;padding:7px 9px;border:1px solid var(--line);border-radius:4px;background:var(--bg);color:var(--fg)}
 .range{display:flex;align-items:center;gap:10px}
@@ -91,10 +94,13 @@ select,input[type=search]{width:100%;font:inherit;font-size:14px;padding:7px 9px
       <select id="commune"><option value="">Les 9 communes</option></select>
     </div>
     <div>
-      <p class="lbl">Grandes parcelles</p>
+      <p class="lbl">Mise en évidence</p>
       <div class="owners">
-        <label class="own" for="hl"><input type="checkbox" id="hl" checked><span class="sw big"></span><span>Mettre en évidence ≥ 9 ha</span><span class="n" id="nbig">–</span></label>
-        <label class="own" for="onlybig"><input type="checkbox" id="onlybig"><span></span><span>Afficher uniquement ≥ 9 ha</span><span></span></label>
+        <label class="own" for="hl"><input type="checkbox" id="hl" checked><span></span><span>Surface ≥ 9 ha</span><span></span></label>
+        <label class="own" for="far"><input type="checkbox" id="far"><span></span><span>Loin des habitations</span><span></span></label>
+        <div class="range sub-range"><input type="range" id="farkm" min="0.5" max="10" step="0.5" value="1" aria-label="Distance minimale aux habitations"><output id="farout">≥ 1 km</output></div>
+        <label class="own" for="onlybig"><input type="checkbox" id="onlybig"><span></span><span>Afficher uniquement ces parcelles</span><span></span></label>
+        <div class="hlsum"><span class="sw big"></span><span id="hldesc">Parcelles mises en évidence</span><span class="n" id="nbig">–</span></div>
       </div>
     </div>
     <div>
@@ -112,7 +118,7 @@ select,input[type=search]{width:100%;font:inherit;font-size:14px;padding:7px 9px
       <input type="search" id="q" placeholder="ex. COMMUNE DE SEILLANS, ONF…">
     </div>
     <div class="stat" id="stat"></div>
-    <p class="note">Les petites routes et chemins apparaissent en zoomant. Cliquez une parcelle pour son détail et un lien vers la vue satellite Géoportail. 303 parcelles du fichier 2025 n'ont pas de tracé dans le cadastre de septembre 2026 (divisées ou renumérotées depuis) et n'apparaissent pas. Public ne veut pas dire accessible : forêts domaniales, camps militaires et réserves ont leurs propres règles.<br><br>Sources : <a href="https://www.data.gouv.fr/datasets/fichiers-des-locaux-et-des-parcelles-des-personnes-morales" target="_blank" rel="noopener">DGFiP</a>, <a href="https://cadastre.data.gouv.fr" target="_blank" rel="noopener">cadastre Etalab</a>, <a href="https://geoservices.ign.fr/bdtopo" target="_blank" rel="noopener">BD TOPO IGN</a>.</p>
+    <p class="note">Les petites routes et chemins apparaissent en zoomant. La distance aux habitations est mesurée depuis le bord de la parcelle jusqu'au bâtiment résidentiel le plus proche (BD TOPO), y compris hors du territoire. Cliquez une parcelle pour son détail et un lien vers la vue satellite Géoportail. 303 parcelles du fichier 2025 n'ont pas de tracé dans le cadastre de septembre 2026 (divisées ou renumérotées depuis) et n'apparaissent pas. Public ne veut pas dire accessible : forêts domaniales, camps militaires et réserves ont leurs propres règles.<br><br>Sources : <a href="https://www.data.gouv.fr/datasets/fichiers-des-locaux-et-des-parcelles-des-personnes-morales" target="_blank" rel="noopener">DGFiP</a>, <a href="https://cadastre.data.gouv.fr" target="_blank" rel="noopener">cadastre Etalab</a>, <a href="https://geoservices.ign.fr/bdtopo" target="_blank" rel="noopener">BD TOPO IGN</a>.</p>
   </aside>
   <div class="mapwrap"><div id="map"></div><div id="loading">Chargement des parcelles…</div></div>
 </div>
@@ -128,13 +134,20 @@ const fmtA=m=>m>=10000?(m/10000).toLocaleString("fr-FR",{maximumFractionDigits:2
 const map=L.map("map",{preferCanvas:true,zoomSnap:.5,attributionControl:true}).setView([43.6,6.72],11);
 map.attributionControl.setPrefix(false).addAttribution("DGFiP 2025 · Cadastre Etalab · BD TOPO IGN");
 const on=new Set(TYPES.map(t=>t[0]));
-const st={commune:"",min:0,q:"",hl:true,only:false,roads:true};
+const st={commune:"",min:0,q:"",hl:true,far:false,farKm:1,only:false,roads:true};
 const BIG=90000;
 let data=null,layer=null,bigLayer=null,comLayer=null,roadMain=null,roadMinor=null,roadLabels=null;
 map.createPane("roads").style.zIndex=350;
 const roadR=L.canvas({pane:"roads"});
 document.getElementById("hl").addEventListener("change",e=>{st.hl=e.target.checked;draw()});
 document.getElementById("onlybig").addEventListener("change",e=>{st.only=e.target.checked;draw()});
+const farKmEl=document.getElementById("farkm"),farOut=document.getElementById("farout");
+const kmTxt=k=>k.toLocaleString("fr-FR",{maximumFractionDigits:1})+" km";
+farKmEl.disabled=true;
+document.getElementById("far").addEventListener("change",e=>{st.far=e.target.checked;farKmEl.disabled=!st.far;draw()});
+farKmEl.addEventListener("input",()=>{st.farKm=+farKmEl.value;farOut.textContent="≥ "+kmTxt(st.farKm);draw()});
+const active=()=>st.hl||st.far;
+const hit=p=>active()&&(!st.hl||p.a>=BIG)&&(!st.far||p.h>=st.farKm*1000);
 document.getElementById("roads").addEventListener("change",e=>{st.roads=e.target.checked;showRoads()});
 
 const ow=document.getElementById("owners");
@@ -150,10 +163,10 @@ minEl.addEventListener("input",()=>{st.min=+minEl.value;minOut.textContent=st.mi
 document.getElementById("commune").addEventListener("change",e=>{st.commune=e.target.value;draw(true)});
 let qt;document.getElementById("q").addEventListener("input",e=>{clearTimeout(qt);qt=setTimeout(()=>{st.q=e.target.value.trim().toUpperCase();draw()},200)});
 
-function pass(p){return on.has(p.g)&&(!st.commune||p.c===st.commune)&&p.a>=Math.max(st.min,st.only?BIG:0)&&(!st.q||p.d.includes(st.q))}
-function style(f){const c=colors[f.properties.g],big=st.hl&&f.properties.a>=BIG;
+function pass(p){return on.has(p.g)&&(!st.commune||p.c===st.commune)&&p.a>=st.min&&(!st.q||p.d.includes(st.q))&&(!st.only||!active()||hit(p))}
+function style(f){const c=colors[f.properties.g],big=hit(f.properties);
   if(big)return{color:css("--big"),weight:2.5,fillColor:c,fillOpacity:.8,opacity:1};
-  return{color:c,weight:1,fillColor:c,fillOpacity:st.hl?.3:.45,opacity:st.hl?.7:.9}}
+  return{color:c,weight:1,fillColor:c,fillOpacity:active()?.3:.45,opacity:active()?.7:.9}}
 function roadStyle(f){const i=f.properties.i;
   if(i===1)return{color:css("--road-main"),weight:4.5,opacity:1};
   if(i<=3)return{color:css("--road-main"),weight:i===2?3:2.2,opacity:.95};
@@ -167,19 +180,21 @@ function popup(f,l){
   const gp=`https://www.geoportail.gouv.fr/carte?c=${c.lng.toFixed(5)},${c.lat.toFixed(5)}&z=18&l0=ORTHOIMAGERY.ORTHOPHOTOS::GEOPORTAIL:OGC:WMTS(1)&l1=CADASTRALPARCELS.PARCELLAIRE_EXPRESS::GEOPORTAIL:OGC:WMTS(1)&permalink=yes`;
   const gm=`https://www.google.com/maps/@${c.lat.toFixed(6)},${c.lng.toFixed(6)},500m/data=!3m1!1e3`;
   return `<div class="pp-type" style="color:${colors[p.g]}">${p.g}</div><div class="pp-own">${p.d}</div>
-  <dl class="pp-grid"><dt>Commune</dt><dd>${p.c}</dd><dt>Parcelle</dt><dd>${p.s} ${p.n}</dd><dt>Surface</dt><dd>${fmtA(p.a)}</dd>${p.k?`<dt>Nature</dt><dd>${p.k}</dd>`:""}</dl>
+  <dl class="pp-grid"><dt>Commune</dt><dd>${p.c}</dd><dt>Parcelle</dt><dd>${p.s} ${p.n}</dd><dt>Surface</dt><dd>${fmtA(p.a)}</dd><dt>Habitation la plus proche</dt><dd>${p.h>=15000?"plus de 15 km":p.h===0?"dans la parcelle":p.h<1000?fmt(Math.round(p.h/10)*10)+" m":kmTxt(Math.round(p.h/100)/10)}</dd>${p.k?`<dt>Nature</dt><dd>${p.k}</dd>`:""}</dl>
   <div class="pp-links"><a href="${gp}" target="_blank" rel="noopener">Géoportail ↗</a><a href="${gm}" target="_blank" rel="noopener">Google satellite ↗</a></div>`;
 }
 function draw(fit){
   if(!data)return;
   if(layer)map.removeLayer(layer);if(bigLayer)map.removeLayer(bigLayer);let nb=0;
   const counts={},area={};let n=0,tot=0;
-  layer=L.geoJSON(data,{filter:f=>{const p=f.properties,ok=pass(p);if(ok){counts[p.g]=(counts[p.g]||0)+1;n++;tot+=p.a;if(p.a>=BIG)nb++}return ok&&!(st.hl&&p.a>=BIG)},
+  layer=L.geoJSON(data,{filter:f=>{const p=f.properties,ok=pass(p);if(ok){counts[p.g]=(counts[p.g]||0)+1;n++;tot+=p.a;if(hit(p))nb++}return ok&&!hit(p)},
     style,onEachFeature:(f,l)=>l.bindPopup(()=>popup(f,l),{maxWidth:300})}).addTo(map);
   document.querySelectorAll(".n[data-t]").forEach(e=>e.textContent=fmt(counts[e.dataset.t]||0));
-  bigLayer=L.geoJSON(data,{filter:f=>st.hl&&f.properties.a>=BIG&&pass(f.properties),style,onEachFeature:(f,l)=>l.bindPopup(()=>popup(f,l),{maxWidth:300})}).addTo(map);
-  document.getElementById("nbig").textContent=fmt(nb);
-  document.getElementById("stat").innerHTML=`<b>${fmt(n)}</b> parcelles affichées, dont <b>${fmt(nb)}</b> ≥ 9 ha<br><b>${fmtA(tot)}</b> au total`;
+  bigLayer=L.geoJSON(data,{filter:f=>hit(f.properties)&&pass(f.properties),style,onEachFeature:(f,l)=>l.bindPopup(()=>popup(f,l),{maxWidth:300})}).addTo(map);
+  document.getElementById("nbig").textContent=active()?fmt(nb):"–";
+  const crit=[st.hl&&"≥ 9 ha",st.far&&"à "+farOut.textContent.replace("≥ ","")+" ou plus d'une habitation"].filter(Boolean);
+  document.getElementById("hldesc").textContent=crit.length?"Mises en évidence : "+crit.join(", "):"Aucun critère coché";
+  document.getElementById("stat").innerHTML=`<b>${fmt(n)}</b> parcelles affichées${active()?`, dont <b>${fmt(nb)}</b> mises en évidence`:""}<br><b>${fmtA(tot)}</b> au total`;
   if(fit){const b=st.commune&&comLayer?comLayer.getLayers().find(l=>norm(l.feature.properties.nom)===norm(st.commune)):null;
     map.fitBounds(b?b.getBounds():(comLayer||layer).getBounds(),{padding:[20,20]})}
 }
