@@ -131,8 +131,8 @@ const on=new Set(TYPES.map(t=>t[0]));
 const st={commune:"",min:0,q:"",hl:true,only:false,roads:true};
 const BIG=90000;
 let data=null,layer=null,bigLayer=null,comLayer=null,roadMain=null,roadMinor=null,roadLabels=null;
-map.createPane("roads").style.zIndex=350;map.createPane("big").style.zIndex=420;
-const roadR=L.canvas({pane:"roads"}),bigR=L.canvas({pane:"big"});
+map.createPane("roads").style.zIndex=350;
+const roadR=L.canvas({pane:"roads"});
 document.getElementById("hl").addEventListener("change",e=>{st.hl=e.target.checked;draw()});
 document.getElementById("onlybig").addEventListener("change",e=>{st.only=e.target.checked;draw()});
 document.getElementById("roads").addEventListener("change",e=>{st.roads=e.target.checked;showRoads()});
@@ -177,7 +177,7 @@ function draw(fit){
   layer=L.geoJSON(data,{filter:f=>{const p=f.properties,ok=pass(p);if(ok){counts[p.g]=(counts[p.g]||0)+1;n++;tot+=p.a;if(p.a>=BIG)nb++}return ok&&!(st.hl&&p.a>=BIG)},
     style,onEachFeature:(f,l)=>l.bindPopup(()=>popup(f,l),{maxWidth:300})}).addTo(map);
   document.querySelectorAll(".n[data-t]").forEach(e=>e.textContent=fmt(counts[e.dataset.t]||0));
-  bigLayer=L.geoJSON(data,{renderer:bigR,filter:f=>st.hl&&f.properties.a>=BIG&&pass(f.properties),style,onEachFeature:(f,l)=>l.bindPopup(()=>popup(f,l),{maxWidth:300})}).addTo(map);
+  bigLayer=L.geoJSON(data,{filter:f=>st.hl&&f.properties.a>=BIG&&pass(f.properties),style,onEachFeature:(f,l)=>l.bindPopup(()=>popup(f,l),{maxWidth:300})}).addTo(map);
   document.getElementById("nbig").textContent=fmt(nb);
   document.getElementById("stat").innerHTML=`<b>${fmt(n)}</b> parcelles affichées, dont <b>${fmt(nb)}</b> ≥ 9 ha<br><b>${fmtA(tot)}</b> au total`;
   if(fit){const b=st.commune&&comLayer?comLayer.getLayers().find(l=>norm(l.feature.properties.nom)===norm(st.commune)):null;
