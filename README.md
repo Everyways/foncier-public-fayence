@@ -4,6 +4,7 @@ Carte interactive des parcelles non bâties détenues par des propriétaires pub
 
 - Filtres par type de propriétaire, type de terrain (7 familles de natures cadastrales), commune, surface minimale et nom de propriétaire
 - Mise en évidence des parcelles de 9 ha et plus et/ou situées à plus de N km (0,5 à 10 km) de toute habitation, critères cumulables
+- Calque optionnel des terrains privés (masqué par défaut) : sociétés et SCI avec leur nom, parcelles de particuliers sans nom
 - Fond routier simplifié (BD TOPO IGN)
 - Pour chaque parcelle : liens vers la vue satellite Géoportail et Google Maps
 
@@ -23,6 +24,7 @@ python3 -m http.server 8000
 |---|---|---|
 | `data/parcelles_publiques_2025.csv` | Parcelles des propriétaires publics, format DGFiP | [Fichiers des parcelles des personnes morales](https://www.data.gouv.fr/datasets/fichiers-des-locaux-et-des-parcelles-des-personnes-morales), situation au 1er janvier 2025 |
 | `data/parcelles.geojson` | Tracés des parcelles ci-dessus, avec la distance à l'habitation la plus proche (propriété `h`, en mètres) | [Cadastre Etalab](https://cadastre.data.gouv.fr), millésime septembre 2026 ; bâtiments résidentiels [BD TOPO IGN](https://geoservices.ign.fr/bdtopo) |
+| `data/prives.geojson` | Toutes les autres parcelles des 9 communes : sociétés et SCI (nom et nature de culture issus du fichier DGFiP), et parcelles de particuliers, dont le cadastre ne publie ni le nom ni la nature ; avec la distance aux habitations | Cadastre Etalab, DGFiP, BD TOPO IGN |
 | `data/communes.geojson` | Limites des 9 communes | Cadastre Etalab |
 | `data/routes.geojson` | Réseau routier simplifié | [BD TOPO IGN](https://geoservices.ign.fr/bdtopo) via la Géoplateforme |
 

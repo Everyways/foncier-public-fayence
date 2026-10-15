@@ -49,4 +49,8 @@ python3 -I "$ROOT/scripts/simplify.py" "$WORK/routes_raw.geojson" "$ROOT/data/ro
 python3 -I "$ROOT/scripts/habitations.py" "$WORK/habitations.json" "43.41,6.39,43.85,7.04"
 python3 -I "$ROOT/scripts/distance.py" "$ROOT/data/parcelles.geojson" "$WORK/habitations.json"
 
+# 6. Terrains privés : toutes les autres parcelles des communes, puis leur distance aux habitations
+python3 -I "$ROOT/scripts/prives.py" "$SRC" "$WORK/parc" "$ROOT/data/prives.geojson"
+python3 -I "$ROOT/scripts/distance.py" "$ROOT/data/prives.geojson" "$WORK/habitations.json"
+
 echo "Données régénérées dans $ROOT/data"

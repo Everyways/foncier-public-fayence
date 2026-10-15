@@ -12,16 +12,16 @@ body{margin:0}[hidden]{display:none!important}*,*::before,*::after{box-sizing:bo
 /* Layout: plein écran, panneau de commande à gauche (en haut sur mobile), plan cadastral à droite */
 :root{
   --bg:#eef1ee; --panel:#fbfcfb; --fg:#1d2621; --muted:#5d6b63; --line:#cfd8d2; --ground:#e4e9e5;
-  --commune:#2f6fb5; --etat:#b5452f; --dept:#3a8a4c; --hlm:#8a4fa8; --ep:#c08a1e; --road:#ffffff; --road-edge:#b9c3bc; --road-main:#e9b44c; --road-mainedge:#a77a22; --big:#111915;
+  --commune:#2f6fb5; --etat:#b5452f; --dept:#3a8a4c; --hlm:#8a4fa8; --ep:#c08a1e; --road:#ffffff; --road-edge:#b9c3bc; --road-main:#e9b44c; --road-mainedge:#a77a22; --big:#111915; --priv-soc:#7c8781; --priv-part:#a9b2ad;
   --sans:"IBM Plex Sans Condensed","Arial Narrow",system-ui,sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#141a17; --panel:#1b221e; --fg:#e3ebe6; --muted:#93a39a; --line:#2e3a33; --ground:#18201c;
-  --commune:#5f9be0; --etat:#e07a62; --dept:#62b876; --hlm:#b57fd3; --ep:#e0ae4a; --road:#3a463f; --road-edge:#2a342e; --road-main:#8a6a2c; --road-mainedge:#5c4519; --big:#f4f8f5; color-scheme:dark}}
+  --commune:#5f9be0; --etat:#e07a62; --dept:#62b876; --hlm:#b57fd3; --ep:#e0ae4a; --road:#3a463f; --road-edge:#2a342e; --road-main:#8a6a2c; --road-mainedge:#5c4519; --big:#f4f8f5; --priv-soc:#8e9a93; --priv-part:#5c6862; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#141a17; --panel:#1b221e; --fg:#e3ebe6; --muted:#93a39a; --line:#2e3a33; --ground:#18201c;
-  --commune:#5f9be0; --etat:#e07a62; --dept:#62b876; --hlm:#b57fd3; --ep:#e0ae4a; --road:#3a463f; --road-edge:#2a342e; --road-main:#8a6a2c; --road-mainedge:#5c4519; --big:#f4f8f5; color-scheme:dark}
+  --commune:#5f9be0; --etat:#e07a62; --dept:#62b876; --hlm:#b57fd3; --ep:#e0ae4a; --road:#3a463f; --road-edge:#2a342e; --road-main:#8a6a2c; --road-mainedge:#5c4519; --big:#f4f8f5; --priv-soc:#8e9a93; --priv-part:#5c6862; color-scheme:dark}
 html,body{height:100%}
 body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px}
 .app{display:grid;grid-template-columns:320px 1fr;height:100%}
@@ -43,6 +43,7 @@ h1{font-size:22px;font-weight:600;margin:0;text-wrap:balance;line-height:1.15}
 .sub-range input:disabled{opacity:.4}
 .hlsum{display:grid;grid-template-columns:14px 1fr auto;align-items:center;gap:8px;padding:6px 4px;font-size:13px;color:var(--muted)}
 .own.terr{grid-template-columns:auto 1fr auto}
+.own.sep{margin-top:6px;border-top:1px solid var(--line);padding-top:10px;border-radius:0}
 .n{font-family:var(--mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
 select,input[type=search]{width:100%;font:inherit;font-size:14px;padding:7px 9px;border:1px solid var(--line);border-radius:4px;background:var(--bg);color:var(--fg)}
 .range{display:flex;align-items:center;gap:10px}
@@ -58,6 +59,7 @@ select,input[type=search]{width:100%;font:inherit;font-size:14px;padding:7px 9px
 .leaflet-popup-content{margin:12px 14px;font-size:14px;line-height:1.4;min-width:220px}
 .leaflet-container a.leaflet-popup-close-button{color:var(--muted)}
 .pp-own{font-weight:600;font-size:15px}
+.leaflet-popup-content .sub{font-size:12px;color:var(--muted);margin:2px 0 0;line-height:1.35}
 .pp-type{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase}
 .pp-grid{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;margin:8px 0;font-size:13px}
 .pp-grid dt{color:var(--muted)} .pp-grid dd{margin:0;font-variant-numeric:tabular-nums}
@@ -84,7 +86,7 @@ select,input[type=search]{width:100%;font:inherit;font-size:14px;padding:7px 9px
   <aside>
     <div>
       <h1>Foncier public du Pays de Fayence</h1>
-      <p class="sub">Parcelles non bâties détenues par l'État, le Département, les communes et les organismes publics. Fichier DGFiP des personnes morales, situation au 1<sup>er</sup> janvier 2025.</p>
+      <p class="sub">Parcelles détenues par l'État, le Département, les communes et les organismes publics, et en option les terrains privés. Fichier DGFiP des personnes morales, situation au 1<sup>er</sup> janvier 2025.</p>
     </div>
     <div>
       <p class="lbl">Propriétaire</p>
@@ -123,14 +125,15 @@ select,input[type=search]{width:100%;font:inherit;font-size:14px;padding:7px 9px
       <input type="search" id="q" placeholder="ex. COMMUNE DE SEILLANS, ONF…">
     </div>
     <div class="stat" id="stat"></div>
-    <p class="note">Les petites routes et chemins apparaissent en zoomant. La distance aux habitations est mesurée depuis le bord de la parcelle jusqu'au bâtiment résidentiel le plus proche (BD TOPO), y compris hors du territoire. Une parcelle peut relever de plusieurs types de terrain ; elle s'affiche si l'un d'eux est coché. Cliquez une parcelle pour son détail et un lien vers la vue satellite Géoportail. 303 parcelles du fichier 2025 n'ont pas de tracé dans le cadastre de septembre 2026 (divisées ou renumérotées depuis) et n'apparaissent pas. Public ne veut pas dire accessible : forêts domaniales, camps militaires et réserves ont leurs propres règles.<br><br>Sources : <a href="https://www.data.gouv.fr/datasets/fichiers-des-locaux-et-des-parcelles-des-personnes-morales" target="_blank" rel="noopener">DGFiP</a>, <a href="https://cadastre.data.gouv.fr" target="_blank" rel="noopener">cadastre Etalab</a>, <a href="https://geoservices.ign.fr/bdtopo" target="_blank" rel="noopener">BD TOPO IGN</a>.</p>
+    <p class="note">Les petites routes et chemins apparaissent en zoomant. La distance aux habitations est mesurée depuis le bord de la parcelle jusqu'au bâtiment résidentiel le plus proche (BD TOPO), y compris hors du territoire. Les terrains privés sont masqués par défaut ; pour les particuliers, ni le nom ni le type de terrain ne sont publiés. Une parcelle peut relever de plusieurs types de terrain ; elle s'affiche si l'un d'eux est coché. Cliquez une parcelle pour son détail et un lien vers la vue satellite Géoportail. 303 parcelles du fichier 2025 n'ont pas de tracé dans le cadastre de septembre 2026 (divisées ou renumérotées depuis) et n'apparaissent pas. Public ne veut pas dire accessible : forêts domaniales, camps militaires et réserves ont leurs propres règles.<br><br>Sources : <a href="https://www.data.gouv.fr/datasets/fichiers-des-locaux-et-des-parcelles-des-personnes-morales" target="_blank" rel="noopener">DGFiP</a>, <a href="https://cadastre.data.gouv.fr" target="_blank" rel="noopener">cadastre Etalab</a>, <a href="https://geoservices.ign.fr/bdtopo" target="_blank" rel="noopener">BD TOPO IGN</a>.</p>
   </aside>
   <div class="mapwrap"><div id="map"></div><div id="loading">Chargement des parcelles…</div></div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
-const TYPES=[["Commune","--commune"],["État","--etat"],["Département","--dept"],["Établissement public","--ep"],["Office HLM","--hlm"]];
+const TYPES=[["Commune","--commune",1],["État","--etat",1],["Département","--dept",1],["Établissement public","--ep",1],["Office HLM","--hlm",1],["Société ou SCI","--priv-soc",0],["Particulier","--priv-part",0]];
+const PRIV=new Set(["Société ou SCI","Particulier"]);
 const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 let colors={};const refreshColors=()=>TYPES.forEach(([t,v])=>colors[t]=css(v));refreshColors();
 const norm=s=>s.normalize("NFD").replace(/[̀-ͯ]/g,"").toUpperCase().replace(/[^A-Z]/g,"");
@@ -138,7 +141,7 @@ const fmt=n=>n.toLocaleString("fr-FR");
 const fmtA=m=>m>=10000?(m/10000).toLocaleString("fr-FR",{maximumFractionDigits:2})+" ha":fmt(m)+" m²";
 const map=L.map("map",{preferCanvas:true,zoomSnap:.5,attributionControl:true}).setView([43.6,6.72],11);
 map.attributionControl.setPrefix(false).addAttribution("DGFiP 2025 · Cadastre Etalab · BD TOPO IGN");
-const on=new Set(TYPES.map(t=>t[0]));
+const on=new Set(TYPES.filter(t=>t[2]).map(t=>t[0]));
 const FAM=[["Bois et forêts",["Taillis simples","Taillis sous Futaies","Futaies résineuses","Bois"]],
   ["Landes et maquis",["Landes","Landes Boisées"]],
   ["Terres et prés",["Terre","Prés","Pâtures ou Pâturages"]],
@@ -152,7 +155,7 @@ const fams=p=>{if(!p._f){const s=new Set((p.k?p.k.split(", "):[]).map(k=>famOf[k
 const onT=new Set(FAM.map(f=>f[0]));
 const st={commune:"",min:0,q:"",hl:true,far:false,farKm:1,only:false,roads:true};
 const BIG=90000;
-let data=null,layer=null,bigLayer=null,comLayer=null,roadMain=null,roadMinor=null,roadLabels=null;
+let data=null,priv=null,privLoading=false,privLayer=null,layer=null,bigLayer=null,comLayer=null,roadMain=null,roadMinor=null,roadLabels=null;
 map.createPane("roads").style.zIndex=350;
 const roadR=L.canvas({pane:"roads"});
 document.getElementById("hl").addEventListener("change",e=>{st.hl=e.target.checked;draw()});
@@ -174,22 +177,29 @@ FAM.forEach(([f],i)=>{
   tw.appendChild(lab);
 });
 const ow=document.getElementById("owners");
-TYPES.forEach(([t,v])=>{
+TYPES.forEach(([t,v,def])=>{
   const id="own-"+t.normalize("NFD").replace(/[^a-z]/gi,"");
-  const lab=document.createElement("label");lab.className="own";lab.htmlFor=id;
-  lab.innerHTML=`<input type="checkbox" id="${id}" checked><span class="sw" style="--c:var(${v})"></span><span>${t}</span><span class="n" data-t="${t}">–</span>`;
-  lab.querySelector("input").addEventListener("change",e=>{e.target.checked?on.add(t):on.delete(t);draw()});
+  const lab=document.createElement("label");lab.className="own"+(t==="Société ou SCI"?" sep":"");lab.htmlFor=id;
+  lab.innerHTML=`<input type="checkbox" id="${id}"${def?" checked":""}><span class="sw" style="--c:var(${v})"></span><span>${PRIV.has(t)?"Privé · "+t.toLowerCase():t}</span><span class="n" data-t="${t}">–</span>`;
+  lab.querySelector("input").addEventListener("change",e=>{e.target.checked?on.add(t):on.delete(t);if(PRIV.has(t)&&e.target.checked&&!priv)loadPriv();else draw()});
   ow.appendChild(lab);
 });
 const minEl=document.getElementById("minarea"),minOut=document.getElementById("minout");
 minEl.addEventListener("input",()=>{st.min=+minEl.value;minOut.textContent=st.min?fmtA(st.min):"0 m²";draw()});
 document.getElementById("commune").addEventListener("change",e=>{st.commune=e.target.value;draw(true)});
+function loadPriv(){
+  if(privLoading)return;privLoading=true;
+  const ld=document.getElementById("loading");ld.textContent="Chargement des terrains privés (50 000 parcelles)…";ld.hidden=false;
+  fetch("data/prives.geojson").then(r=>r.json()).then(j=>{priv=j;ld.hidden=true;draw()})
+    .catch(()=>{privLoading=false;ld.textContent="Les terrains privés n'ont pas pu être chargés. Réessayez.";setTimeout(()=>ld.hidden=true,4000)});
+}
 let qt;document.getElementById("q").addEventListener("input",e=>{clearTimeout(qt);qt=setTimeout(()=>{st.q=e.target.value.trim().toUpperCase();draw()},200)});
 
 function passBase(p){return (!st.commune||p.c===st.commune)&&p.a>=st.min&&(!st.q||p.d.includes(st.q))&&(!st.only||!active()||hit(p))}
 function pass(p){return fams(p).some(f=>onT.has(f))&&on.has(p.g)&&(!st.commune||p.c===st.commune)&&p.a>=st.min&&(!st.q||p.d.includes(st.q))&&(!st.only||!active()||hit(p))}
 function style(f){const c=colors[f.properties.g],big=hit(f.properties);
   if(big)return{color:css("--big"),weight:2.5,fillColor:c,fillOpacity:.8,opacity:1};
+  if(PRIV.has(f.properties.g))return{color:c,weight:.5,fillColor:c,fillOpacity:active()?.18:.3,opacity:.8};
   return{color:c,weight:1,fillColor:c,fillOpacity:active()?.3:.45,opacity:active()?.7:.9}}
 function roadStyle(f){const i=f.properties.i;
   if(i===1)return{color:css("--road-main"),weight:4.5,opacity:1};
@@ -201,22 +211,29 @@ function showRoads(){[roadMain,roadMinor,roadLabels].forEach(l=>l&&map.removeLay
 map.on("zoomend",showRoads);
 function popup(f,l){
   const p=f.properties,c=l.getBounds().getCenter();
+  const who=p.g==="Particulier"?"Propriétaire non publié":p.d;
   const gp=`https://www.geoportail.gouv.fr/carte?c=${c.lng.toFixed(5)},${c.lat.toFixed(5)}&z=18&l0=ORTHOIMAGERY.ORTHOPHOTOS::GEOPORTAIL:OGC:WMTS(1)&l1=CADASTRALPARCELS.PARCELLAIRE_EXPRESS::GEOPORTAIL:OGC:WMTS(1)&permalink=yes`;
   const gm=`https://www.google.com/maps/@${c.lat.toFixed(6)},${c.lng.toFixed(6)},500m/data=!3m1!1e3`;
-  return `<div class="pp-type" style="color:${colors[p.g]}">${p.g}</div><div class="pp-own">${p.d}</div>
+  return `<div class="pp-type" style="color:${colors[p.g]}">${p.g}</div><div class="pp-own">${who}</div>${p.g==="Particulier"?`<div class="sub">Personne physique, entreprise individuelle ou SCI unipersonnelle : le cadastre ne publie pas leur nom.</div>`:""}
   <dl class="pp-grid"><dt>Commune</dt><dd>${p.c}</dd><dt>Parcelle</dt><dd>${p.s} ${p.n}</dd><dt>Surface</dt><dd>${fmtA(p.a)}</dd><dt>Habitation la plus proche</dt><dd>${p.h>=15000?"plus de 15 km":p.h===0?"dans la parcelle":p.h<1000?fmt(Math.round(p.h/10)*10)+" m":kmTxt(Math.round(p.h/100)/10)}</dd>${p.k?`<dt>Nature</dt><dd>${p.k}</dd>`:""}</dl>
   <div class="pp-links"><a href="${gp}" target="_blank" rel="noopener">Géoportail ↗</a><a href="${gm}" target="_blank" rel="noopener">Google satellite ↗</a></div>`;
 }
-function draw(fit){
+let drawT;
+function draw(fit){clearTimeout(drawT);drawT=setTimeout(()=>drawNow(fit),priv?150:0)}
+function drawNow(fit){
   if(!data)return;
-  if(layer)map.removeLayer(layer);if(bigLayer)map.removeLayer(bigLayer);let nb=0;
-  const counts={},area={};let n=0,tot=0;
+  [privLayer,layer,bigLayer].forEach(l=>l&&map.removeLayer(l));let nb=0;
+  const counts={};let n=0,tot=0;
+  const pop=(f,l)=>l.bindPopup(()=>popup(f,l),{maxWidth:300});
+  const keep=f=>{const p=f.properties,ok=pass(p);if(ok){counts[p.g]=(counts[p.g]||0)+1;n++;tot+=p.a;if(hit(p))nb++}return ok&&!hit(p)};
+  const privOn=priv&&(on.has("Société ou SCI")||on.has("Particulier"));
+  privLayer=privOn?L.geoJSON(priv,{filter:keep,style,onEachFeature:pop}).addTo(map):null;
   layer=L.geoJSON(data,{filter:f=>{const p=f.properties,ok=pass(p);if(ok){counts[p.g]=(counts[p.g]||0)+1;n++;tot+=p.a;if(hit(p))nb++}return ok&&!hit(p)},
     style,onEachFeature:(f,l)=>l.bindPopup(()=>popup(f,l),{maxWidth:300})}).addTo(map);
   document.querySelectorAll(".n[data-t]").forEach(e=>e.textContent=fmt(counts[e.dataset.t]||0));
-  const fc={};data.features.forEach(f=>{const p=f.properties;if(on.has(p.g)&&passBase(p))fams(p).forEach(x=>fc[x]=(fc[x]||0)+1)});
+  const fc={};(privOn?data.features.concat(priv.features):data.features).forEach(f=>{const p=f.properties;if(on.has(p.g)&&passBase(p))fams(p).forEach(x=>fc[x]=(fc[x]||0)+1)});
   document.querySelectorAll(".n[data-f]").forEach(e=>e.textContent=fmt(fc[e.dataset.f]||0));
-  bigLayer=L.geoJSON(data,{filter:f=>hit(f.properties)&&pass(f.properties),style,onEachFeature:(f,l)=>l.bindPopup(()=>popup(f,l),{maxWidth:300})}).addTo(map);
+  bigLayer=L.geoJSON(privOn?{type:"FeatureCollection",features:data.features.concat(priv.features)}:data,{filter:f=>hit(f.properties)&&pass(f.properties),style,onEachFeature:(f,l)=>l.bindPopup(()=>popup(f,l),{maxWidth:300})}).addTo(map);
   document.getElementById("nbig").textContent=active()?fmt(nb):"–";
   const crit=[st.hl&&"≥ 9 ha",st.far&&"à "+farOut.textContent.replace("≥ ","")+" ou plus d'une habitation"].filter(Boolean);
   document.getElementById("hldesc").textContent=crit.length?"Mises en évidence : "+crit.join(", "):"Aucun critère coché";
@@ -244,7 +261,7 @@ Promise.all([fetch("data/parcelles.geojson").then(r=>r.json()),fetch("data/commu
   draw(true);
 }).catch(()=>{document.getElementById("loading").textContent="Les données n'ont pas pu être chargées. Rechargez la page."});
 const mq=matchMedia("(prefers-color-scheme: dark)");
-const restyle=()=>{refreshColors();if(layer)layer.setStyle(style);if(bigLayer)bigLayer.setStyle(style);[roadMain,roadMinor].forEach(l=>l&&l.setStyle(roadStyle));if(comLayer)comLayer.setStyle({color:css("--muted")})};
+const restyle=()=>{refreshColors();if(privLayer)privLayer.setStyle(style);if(layer)layer.setStyle(style);if(bigLayer)bigLayer.setStyle(style);[roadMain,roadMinor].forEach(l=>l&&l.setStyle(roadStyle));if(comLayer)comLayer.setStyle({color:css("--muted")})};
 mq.addEventListener?.("change",restyle);
 new MutationObserver(restyle).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
 </script>
